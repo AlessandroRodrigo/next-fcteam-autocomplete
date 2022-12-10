@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { Box, Button, Container, Stack, TextInput, Title } from "@mantine/core";
-import { useStyles } from "./home.styles";
+import { useStyles } from "@/styles/home.styles";
 import {
   DateRangePicker,
   DateRangePickerValue,
