@@ -20,6 +20,7 @@ import {
   IconFileDescription,
   IconKey,
 } from "@tabler/icons";
+import { api } from "@/lib/axios";
 
 export default function Home() {
   const [dateRangeValue, setDateRangeValue] = useState<DateRangePickerValue>([
@@ -49,6 +50,8 @@ export default function Home() {
   } = useStyles();
 
   const handleSubmit = async () => {
+    api.defaults.headers.common["Authorization"] = `Bearer ${values.token}`;
+
     if (!dateRangeValue[0] || !dateRangeValue[1]) {
       console.error("Please select a date range");
       showNotification({
@@ -95,8 +98,7 @@ export default function Home() {
         });
 
         const response = await AppointmentService.createAppointment(
-          appointment,
-          values.token
+          appointment
         );
 
         if (response.status === 200) {
@@ -113,7 +115,9 @@ export default function Home() {
           });
         }
       } catch (e: any) {
-        if (e.response.status === 401) {
+        console.error(e);
+
+        if (e?.response?.status === 401) {
           updateNotification({
             id: appointment.day,
             title: "There's a problem",
