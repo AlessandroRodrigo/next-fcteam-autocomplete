@@ -1,3 +1,5 @@
+import { ChangeEvent, useState } from "react";
+
 import Head from "next/head";
 import {
   Box,
@@ -15,7 +17,6 @@ import {
   DateRangePickerValue,
   TimeRangeInput,
 } from "@mantine/dates";
-import { ChangeEvent, useState } from "react";
 import { useForm } from "@mantine/form";
 import { getDates, isHoliday, isWeekend } from "@/utils/date/date.utils";
 import { AppointmentModel } from "@/models/appointment.model";
@@ -29,31 +30,22 @@ import {
   IconFileDescription,
   IconKey,
 } from "@tabler/icons";
+
 import { api } from "@/lib/axios";
-import { UserService } from "@/services/user.service";
-import { decode } from "jsonwebtoken";
-import { CustomerService } from "@/services/customer.service";
-import { ProjectService } from "@/services/project.service";
+import { useGetCustomers } from "@/hooks/home/use-get.customers.hook";
+import { useGetProjects } from "@/hooks/home/use-get-projects.hook";
+import { useGetUser } from "@/hooks/home/use-get-user.hook";
 
 export default function Home() {
-  const [user, setUser] = useState<{
-    company: string;
-    name: string;
-    _id: string;
-  } | null>(null);
-
-  const [customers, setCustomers] = useState<
-    { name: string; company: string }[]
-  >([]);
-
-  const [projects, setProjects] = useState<
-    { name: string; _id: string }[] | never[]
-  >([]);
+  const { customers, getCustomers } = useGetCustomers();
+  const { projects, setProjects, getProjects } = useGetProjects();
+  const { user, getUserInfo } = useGetUser();
 
   const [dateRangeValue, setDateRangeValue] = useState<DateRangePickerValue>([
     null,
     null,
   ]);
+
   const [timeRangeValue, setTimeRangeValue] = useState<[Date, Date]>([
     new Date(),
     new Date(),
@@ -76,13 +68,7 @@ export default function Home() {
     },
   });
 
-  const {
-    classes: { container, containerForm },
-  } = useStyles();
-
   const handleSubmit = async () => {
-    console.log(values);
-
     const workedDays = getDates(dateRangeValue[0]!, dateRangeValue[1]!);
 
     const appointments: AppointmentModel[] = workedDays.map((date) => {
@@ -177,125 +163,6 @@ export default function Home() {
     }
   };
 
-  const getUserInfo = async (value: string) => {
-    try {
-      showNotification({
-        id: "loading-user",
-        title: "Identifying user",
-        message: "Loading user information",
-        loading: true,
-      });
-
-      const decodedToken = decode(value);
-
-      if (typeof decodedToken !== "string") {
-        const username = String(decodedToken?.unique_name).toLowerCase();
-
-        const getUserResponse = await UserService.getUser(username);
-
-        setUser(getUserResponse.data[0]);
-
-        updateNotification({
-          id: "loading-user",
-          title: "User identified",
-          message: `User: ${getUserResponse.data[0].name} identified`,
-          color: "teal",
-          icon: <IconCheck size={16} />,
-          autoClose: 3000,
-        });
-
-        return getUserResponse.data[0];
-      }
-    } catch (e) {
-      console.error(e);
-
-      updateNotification({
-        id: "loading-user",
-        title: "There's a problem",
-        message: "We can't identify the user of this token",
-        color: "red",
-        autoClose: 3000,
-      });
-
-      setUser(null);
-      return null;
-    }
-  };
-
-  const getCustomers = async (company: string) => {
-    try {
-      showNotification({
-        id: "loading-customers",
-        title: "Loading customers",
-        message: "Loading customers information",
-        loading: true,
-      });
-
-      const getCustomersResponse = await CustomerService.getCustomer(company);
-
-      setCustomers(getCustomersResponse.data);
-
-      updateNotification({
-        id: "loading-customers",
-        title: "Customers loaded",
-        message: `${getCustomersResponse.data.length} customers loaded`,
-        color: "teal",
-        icon: <IconCheck size={16} />,
-        autoClose: 3000,
-      });
-
-      return getCustomersResponse.data;
-    } catch (e) {
-      console.error(e);
-
-      updateNotification({
-        id: "loading-customers",
-        title: "There's a problem",
-        message: "We can't load the customers",
-        color: "red",
-        autoClose: 3000,
-      });
-
-      return [];
-    }
-  };
-
-  const getProjects = async (customer: string) => {
-    try {
-      showNotification({
-        id: "loading-projects",
-        title: "Loading projects",
-        message: "Loading projects information",
-        loading: true,
-      });
-
-      const getProjectsResponse = await ProjectService.getProject(customer);
-
-      updateNotification({
-        id: "loading-projects",
-        title: "Projects loaded",
-        message: `${getProjectsResponse.data.length} projects loaded`,
-        color: "teal",
-        icon: <IconCheck size={16} />,
-        autoClose: 3000,
-      });
-
-      return getProjectsResponse.data;
-    } catch (e) {
-      console.error(e);
-
-      updateNotification({
-        id: "loading-projects",
-        title: "There's a problem",
-        message: "We can't load the projects",
-        color: "red",
-        autoClose: 3000,
-      });
-
-      return [];
-    }
-  };
-
   const isValidForm = () => {
     const isValidDateRange = dateRangeValue[0] && dateRangeValue[1];
     const isValidTimeRange = timeRangeValue[0] && timeRangeValue[1];
@@ -303,6 +170,10 @@ export default function Home() {
 
     return !(!isValidDateRange || !isValidTimeRange || !isValidForm);
   };
+
+  const {
+    classes: { container, containerForm },
+  } = useStyles();
 
   return (
     <div>
