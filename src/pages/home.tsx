@@ -32,7 +32,7 @@ import {
 } from "@tabler/icons";
 
 import { api } from "@/lib/axios";
-import { useGetCustomers } from "@/hooks/home/use-get.customers.hook";
+import { useGetCustomers } from "@/hooks/home/use-get-customers.hook";
 import { useGetProjects } from "@/hooks/home/use-get-projects.hook";
 import { useGetUser } from "@/hooks/home/use-get-user.hook";
 
