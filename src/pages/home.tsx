@@ -84,9 +84,6 @@ export default function Home() {
         user: user?._id || "",
         project: values.project,
         customer: values.customer,
-        source: "manual",
-        toDo: false,
-        track_option: "start_and_end",
       });
     });
 
@@ -147,19 +144,19 @@ export default function Home() {
 
     const value = e.target.value;
 
-    if (value) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${value}`;
-      const returnedUser = await getUserInfo(value);
+    if (!value) return;
 
-      if (returnedUser) {
-        const returnedCustomers = await getCustomers(returnedUser.company);
+    api.defaults.headers.common["Authorization"] = `Bearer ${value}`;
+    const returnedUser = await getUserInfo(value);
 
-        for (const customer of returnedCustomers) {
-          const returnedProjects = await getProjects(customer.id);
+    if (!returnedUser) return;
 
-          setProjects((prevProjects) => [...prevProjects, ...returnedProjects]);
-        }
-      }
+    const returnedCustomers = await getCustomers(returnedUser.company);
+
+    for (const customer of returnedCustomers) {
+      const returnedProjects = await getProjects(customer.id);
+
+      setProjects((prevProjects) => [...prevProjects, ...returnedProjects]);
     }
   };
 

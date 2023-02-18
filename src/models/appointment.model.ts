@@ -16,7 +16,14 @@ export class AppointmentModel implements IAppointment {
     Object.assign(this, appointment);
   }
 
-  static factory(appointment: IAppointment): AppointmentModel {
-    return new AppointmentModel(appointment);
+  static factory(
+    appointment: Omit<IAppointment, "source" | "toDo" | "track_option">
+  ): AppointmentModel {
+    return new AppointmentModel({
+      source: "manual",
+      toDo: false,
+      track_option: "start_and_end",
+      ...appointment,
+    });
   }
 }
