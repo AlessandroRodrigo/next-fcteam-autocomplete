@@ -1,18 +1,18 @@
 import dayjs from "dayjs";
 import { holidays } from "./date.constants";
 
-export const isWeekend = (date: Date) => {
+const isWeekend = (date: Date) => {
   const day = date.getDay();
   return day === 0 || day === 6;
 };
 
-export const isHoliday = (date: Date) => {
+const isHoliday = (date: Date) => {
   const dateFormatted = dayjs(date).format("YYYY-MM-DD");
 
   return !!holidays.find((holiday) => holiday.date === dateFormatted);
 };
 
-export const getDates = (startDate: Date, endDate: Date) => {
+const getIntervalDates = (startDate: Date, endDate: Date) => {
   const dates = [];
   let currentDate = startDate;
   const addDays = function (this: Date, days: number) {
@@ -26,4 +26,10 @@ export const getDates = (startDate: Date, endDate: Date) => {
   }
 
   return dates.filter((date) => !isWeekend(date) && !isHoliday(date));
+};
+
+export const DateUtils = {
+  isWeekend,
+  isHoliday,
+  getIntervalDates,
 };
