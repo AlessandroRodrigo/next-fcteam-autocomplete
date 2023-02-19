@@ -70,11 +70,11 @@ export default function Home() {
 
   const handleSubmit = async () => {
     const workedDays = getDates(dateRangeValue[0]!, dateRangeValue[1]!);
+    const startTime = timeRangeValue[0].toISOString();
+    const endTime = timeRangeValue[1].toISOString();
 
     const appointments: AppointmentModel[] = workedDays.map((date) => {
       const dateString = date.toISOString();
-      const startTime = timeRangeValue[0].toISOString();
-      const endTime = timeRangeValue[1].toISOString();
 
       return AppointmentModel.factory({
         day: dateString,
