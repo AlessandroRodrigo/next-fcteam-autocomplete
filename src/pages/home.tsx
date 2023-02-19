@@ -18,7 +18,7 @@ import {
   TimeRangeInput,
 } from "@mantine/dates";
 import { useForm } from "@mantine/form";
-import { getDates, isHoliday, isWeekend } from "@/utils/date/date.utils";
+import { DateUtils } from "@/utils/date/date.utils";
 import { AppointmentModel } from "@/models/appointment.model";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import dayjs from "dayjs";
@@ -69,7 +69,10 @@ export default function Home() {
   });
 
   const handleSubmit = async () => {
-    const workedDays = getDates(dateRangeValue[0]!, dateRangeValue[1]!);
+    const workedDays = DateUtils.getIntervalDates(
+      dateRangeValue[0]!,
+      dateRangeValue[1]!
+    );
     const startTime = timeRangeValue[0].toISOString();
     const endTime = timeRangeValue[1].toISOString();
 
@@ -243,7 +246,9 @@ export default function Home() {
                 label="Select the date range"
                 disabled={!values.description}
                 withAsterisk
-                excludeDate={(date) => isWeekend(date) || isHoliday(date)}
+                excludeDate={(date) =>
+                  DateUtils.isWeekend(date) || DateUtils.isHoliday(date)
+                }
                 description="This date range will be used to autocomplete worked days in FCTeam, we will automatically remove the weekends and holidays"
                 icon={<IconCalendar size={14} />}
                 placeholder="Pick dates range"
