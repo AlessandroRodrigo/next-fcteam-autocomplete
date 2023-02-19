@@ -70,7 +70,7 @@ describe("DateUtils", () => {
         new Date("2021-06-18T03:00:00.000Z"),
       ]);
     });
-    it.only("should return an array of dates between two dates without weekends and holidays", () => {
+    it("should return an array of dates between two dates without weekends and holidays", () => {
       const startDate = new Date("2023-01-01T03:00:00.000Z");
       const endDate = new Date("2023-01-07T03:00:00.000Z");
 
