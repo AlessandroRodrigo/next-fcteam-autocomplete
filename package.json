@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest --config ./vitest.config.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -36,6 +37,7 @@
     "@types/jsonwebtoken": "^8.5.9",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.8.1"
+    "prettier": "^2.8.1",
+    "vitest": "^0.28.5"
   }
 }
