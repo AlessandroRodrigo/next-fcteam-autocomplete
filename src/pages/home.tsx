@@ -91,33 +91,19 @@ export default function Home() {
     });
 
     for (const appointment of appointments) {
-      try {
-        showNotification({
-          id: appointment.day,
-          title: "Creating appointment",
-          message:
-            'Creating appointment for date "' +
-            dayjs(appointment.day).format("DD/MM/YYYY") +
-            '"',
-          loading: true,
-          disallowClose: true,
-          autoClose: false,
-        });
+      showNotification({
+        id: appointment.day,
+        title: "Creating appointment",
+        message:
+          'Creating appointment for date "' +
+          dayjs(appointment.day).format("DD/MM/YYYY") +
+          '"',
+        loading: true,
+        disallowClose: true,
+        autoClose: false,
+      });
 
-        await AppointmentService.createAppointment(appointment);
-
-        updateNotification({
-          id: appointment.day,
-          title: "Appointment created",
-          color: "teal",
-          message:
-            'Appointment for date "' +
-            dayjs(appointment.day).format("DD/MM/YYYY") +
-            '" created',
-          icon: <IconCheck size={16} />,
-          autoClose: false,
-        });
-      } catch (e: any) {
+      await AppointmentService.createAppointment(appointment).catch((e) => {
         console.error(e);
 
         if (e?.response?.status === 401) {
@@ -138,7 +124,19 @@ export default function Home() {
           message: "Something went wrong",
           color: "red",
         });
-      }
+      });
+
+      updateNotification({
+        id: appointment.day,
+        title: "Appointment created",
+        color: "teal",
+        message:
+          'Appointment for date "' +
+          dayjs(appointment.day).format("DD/MM/YYYY") +
+          '" created',
+        icon: <IconCheck size={16} />,
+        autoClose: false,
+      });
     }
   };
 
