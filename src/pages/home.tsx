@@ -113,12 +113,11 @@ export default function Home() {
     const value = e.target.value;
     if (!value) return;
 
-    setTokenOnHttpClient(value);
-
     const decodedToken = decode(value);
 
     if (!decodedToken || typeof decodedToken === "string") return;
 
+    setTokenOnHttpClient(value);
     setDecodedToken(decodedToken);
   }
 
