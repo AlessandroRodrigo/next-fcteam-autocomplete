@@ -1,55 +1,42 @@
 import { ChangeEvent, useState } from "react";
 
-import Head from "next/head";
+import { AppointmentModel } from "@/models/appointment.model";
+import { useStyles } from "@/styles/home.styles";
+import { DateUtils } from "@/utils/date/date.utils";
 import {
   Box,
   Button,
   Container,
   Flex,
+  Loader,
   Select,
   Stack,
   TextInput,
   Title,
 } from "@mantine/core";
-import { useStyles } from "@/styles/home.styles";
 import {
   DateRangePicker,
   DateRangePickerValue,
   TimeRangeInput,
 } from "@mantine/dates";
 import { useForm } from "@mantine/form";
-import { DateUtils } from "@/utils/date/date.utils";
-import { AppointmentModel } from "@/models/appointment.model";
-import { showNotification, updateNotification } from "@mantine/notifications";
-import dayjs from "dayjs";
-import { AppointmentService } from "@/services/appointment.service";
 import {
   IconCalendar,
-  IconCheck,
   IconClock,
   IconFileDescription,
   IconKey,
 } from "@tabler/icons";
+import Head from "next/head";
 
+import { useCreateAppointmentMutation } from "@/hooks/home/use-create-appointment-mutation";
+import { useGetCustomersQuery } from "@/hooks/home/use-get-customers-query";
+import { useGetProjectsQuery } from "@/hooks/home/use-get-projects-query";
+import { useGetUserQuery } from "@/hooks/home/use-get-user-query";
 import { api } from "@/lib/axios";
-import { useGetCustomers } from "@/hooks/home/use-get-customers.hook";
-import { useGetProjects } from "@/hooks/home/use-get-projects.hook";
-import { useGetUser } from "@/hooks/home/use-get-user.hook";
+import { JwtPayload, decode } from "jsonwebtoken";
 
 export default function Home() {
-  const { customers, getCustomers } = useGetCustomers();
-  const { projects, setProjects, getProjects } = useGetProjects();
-  const { user, getUserInfo } = useGetUser();
-
-  const [dateRangeValue, setDateRangeValue] = useState<DateRangePickerValue>([
-    null,
-    null,
-  ]);
-
-  const [timeRangeValue, setTimeRangeValue] = useState<[Date, Date]>([
-    new Date(),
-    new Date(),
-  ]);
+  const [decodedToken, setDecodedToken] = useState<JwtPayload>({});
 
   const { getInputProps, onSubmit, values, isValid } = useForm({
     initialValues: {
@@ -68,6 +55,27 @@ export default function Home() {
     },
   });
 
+  const createAppointmentMutation = useCreateAppointmentMutation();
+  const userQuery = useGetUserQuery({
+    username: decodedToken.unique_name?.toLowerCase() || "",
+  });
+  const customersQuery = useGetCustomersQuery({
+    company: userQuery.data?.company || "",
+  });
+  const projectsQuery = useGetProjectsQuery({
+    customer: values.customer || "",
+  });
+
+  const [dateRangeValue, setDateRangeValue] = useState<DateRangePickerValue>([
+    null,
+    null,
+  ]);
+
+  const [timeRangeValue, setTimeRangeValue] = useState<[Date, Date]>([
+    new Date(),
+    new Date(),
+  ]);
+
   const handleSubmit = async () => {
     const workedDays = DateUtils.getIntervalDates(
       dateRangeValue[0]!,
@@ -84,90 +92,42 @@ export default function Home() {
         start: startTime,
         stop: endTime,
         task_description: values.description,
-        user: user?._id || "",
+        user: userQuery.data?._id || "",
         project: values.project,
         customer: values.customer,
       });
     });
 
     for (const appointment of appointments) {
-      showNotification({
-        id: appointment.day,
-        title: "Creating appointment",
-        message:
-          'Creating appointment for date "' +
-          dayjs(appointment.day).format("DD/MM/YYYY") +
-          '"',
-        loading: true,
-        disallowClose: true,
-        autoClose: false,
-      });
-
-      await AppointmentService.createAppointment(appointment).catch((e) => {
-        console.error(e);
-
-        if (e?.response?.status === 401) {
-          updateNotification({
-            id: appointment.day,
-            title: "There's a problem",
-            message: "Invalid token",
-            color: "red",
-            autoClose: false,
-          });
-
-          return;
-        }
-
-        updateNotification({
-          id: appointment.day,
-          title: "There's a problem",
-          message: "Something went wrong",
-          color: "red",
-        });
-      });
-
-      updateNotification({
-        id: appointment.day,
-        title: "Appointment created",
-        color: "teal",
-        message:
-          'Appointment for date "' +
-          dayjs(appointment.day).format("DD/MM/YYYY") +
-          '" created',
-        icon: <IconCheck size={16} />,
-        autoClose: false,
-      });
+      await createAppointmentMutation.mutateAsync(appointment);
     }
   };
 
-  const handleTokenChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  function setTokenOnHttpClient(token: string) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+
+  function onTokenInputChange(e: ChangeEvent<HTMLInputElement>) {
     getInputProps("token").onChange(e);
 
     const value = e.target.value;
-
     if (!value) return;
 
-    api.defaults.headers.common["Authorization"] = `Bearer ${value}`;
-    const returnedUser = await getUserInfo(value);
+    const decodedToken = decode(value);
 
-    if (!returnedUser) return;
+    if (!decodedToken || typeof decodedToken === "string") return;
 
-    const returnedCustomers = await getCustomers(returnedUser.company);
+    setTokenOnHttpClient(value);
+    setDecodedToken(decodedToken);
+  }
 
-    for (const customer of returnedCustomers) {
-      const returnedProjects = await getProjects(customer.id);
-
-      setProjects((prevProjects) => [...prevProjects, ...returnedProjects]);
-    }
-  };
-
-  const isValidForm = () => {
+  function validateForm() {
     const isValidDateRange = dateRangeValue[0] && dateRangeValue[1];
     const isValidTimeRange = timeRangeValue[0] && timeRangeValue[1];
     const isValidForm = isValid("token") && isValid("description");
 
     return !(!isValidDateRange || !isValidTimeRange || !isValidForm);
-  };
+  }
 
   const {
     classes: { container, containerForm },
@@ -195,19 +155,25 @@ export default function Home() {
                 withAsterisk
                 description="This token will be used to authenticate in FCTeam API"
                 icon={<IconKey size={14} />}
+                rightSection={userQuery.isLoading ? <Loader size={14} /> : null}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
                 {...getInputProps("token")}
-                onChange={handleTokenChange}
+                onChange={onTokenInputChange}
               />
 
               <Flex sx={{ flex: 1 }} gap="md">
                 <Select
                   sx={{ flex: 1 }}
                   disabled={!values.token}
-                  data={customers.map((customer) => ({
-                    label: customer?.name,
-                    value: customer?.company,
-                  }))}
+                  data={
+                    customersQuery.data?.map((customer) => ({
+                      label: customer?.name,
+                      value: customer?._id,
+                    })) || []
+                  }
+                  rightSection={
+                    customersQuery.isLoading ? <Loader size={14} /> : null
+                  }
                   label="Choose customer"
                   withAsterisk
                   description="Choose the customer to autocomplete the worked days"
@@ -218,10 +184,15 @@ export default function Home() {
                 <Select
                   sx={{ flex: 1 }}
                   disabled={!values.customer}
-                  data={projects.map((customer) => ({
-                    label: customer?.name,
-                    value: customer?._id,
-                  }))}
+                  data={
+                    projectsQuery.data?.map((project) => ({
+                      label: project?.name,
+                      value: project?._id,
+                    })) || []
+                  }
+                  rightSection={
+                    projectsQuery.isLoading ? <Loader size={14} /> : null
+                  }
                   label="Choose project"
                   withAsterisk
                   description="Choose the project to autocomplete the worked days"
@@ -265,7 +236,11 @@ export default function Home() {
                 onChange={setTimeRangeValue}
               />
 
-              <Button disabled={!isValidForm()} type="submit">
+              <Button
+                disabled={!validateForm()}
+                loading={createAppointmentMutation.isLoading}
+                type="submit"
+              >
                 Create appointments
               </Button>
             </Stack>

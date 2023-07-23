@@ -1,13 +1,16 @@
-import { test, expect } from "@playwright/test";
+import { Page, expect, test } from "@playwright/test";
 
-test("should create appointments for a date interval", async ({ page }) => {
+const mockedToken =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJ1bmlxdWVfbmFtZSI6InRlc3QifQ.bgecAvZbOovdK1HyzX70eeiDgij-EeidYVJaW1u5jPY";
+
+async function setupInterceptors(page: Page) {
   await page.route("**/v1/users/**", (route) => {
     route.fulfill({
       status: 200,
       body: JSON.stringify([
         {
-          _id: "60c7b1f9b9d3a00015e9b1b0",
-          company: "60c7b1f9b9d3a00015e9b1af",
+          _id: "test",
+          company: "test",
           name: "John Doe",
         },
       ]),
@@ -20,7 +23,7 @@ test("should create appointments for a date interval", async ({ page }) => {
       body: JSON.stringify([
         {
           name: "Test project",
-          _id: "60c7b1f9b9d3a00015e9b1b0",
+          _id: "test",
         },
       ]),
     });
@@ -32,7 +35,8 @@ test("should create appointments for a date interval", async ({ page }) => {
       body: JSON.stringify([
         {
           name: "Test customer",
-          company: "60c7b1f9b9d3a00015e9b1b0",
+          company: "test",
+          _id: "test",
         },
       ]),
     });
@@ -43,8 +47,12 @@ test("should create appointments for a date interval", async ({ page }) => {
       status: 200,
     });
   });
+}
 
+test("should create appointments for a date interval", async ({ page }) => {
+  await setupInterceptors(page);
   await page.goto("http://localhost:3000");
+
   const tokenInput = await page.getByPlaceholder(
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
   );
@@ -52,17 +60,15 @@ test("should create appointments for a date interval", async ({ page }) => {
     "Ex.: Meeting with client, Worked on project, etc."
   );
   const dateInput = await page.getByPlaceholder("Pick dates range");
-
   const customerSelect = await page.getByRole("searchbox", {
     name: "Choose customer",
   });
-
   const projectSelect = await page.getByRole("searchbox", {
     name: "Choose project",
   });
 
   await tokenInput.click();
-  await tokenInput.fill("test");
+  await tokenInput.fill(mockedToken);
 
   await customerSelect.click();
   await page.getByText("Test customer").click();
@@ -87,6 +93,9 @@ test("should create appointments for a date interval", async ({ page }) => {
   await page.getByPlaceholder("--").nth(3).fill("00");
 
   await page.getByRole("button", { name: "Create appointments" }).click();
+  expect(
+    await page.getByRole("button", { name: "Create appointments" }).isEnabled()
+  ).toBe(true);
 
   await page.waitForSelector("text=Appointment created");
 
