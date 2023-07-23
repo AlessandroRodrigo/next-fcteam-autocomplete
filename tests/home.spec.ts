@@ -93,6 +93,9 @@ test("should create appointments for a date interval", async ({ page }) => {
   await page.getByPlaceholder("--").nth(3).fill("00");
 
   await page.getByRole("button", { name: "Create appointments" }).click();
+  expect(
+    await page.getByRole("button", { name: "Create appointments" }).isEnabled()
+  ).toBe(true);
 
   await page.waitForSelector("text=Appointment created");
 
