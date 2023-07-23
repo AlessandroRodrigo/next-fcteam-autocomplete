@@ -1,7 +1,6 @@
 import { ChangeEvent, useState } from "react";
 
 import { AppointmentModel } from "@/models/appointment.model";
-import { AppointmentService } from "@/services/appointment.service";
 import { useStyles } from "@/styles/home.styles";
 import { DateUtils } from "@/utils/date/date.utils";
 import {
@@ -21,17 +20,15 @@ import {
   TimeRangeInput,
 } from "@mantine/dates";
 import { useForm } from "@mantine/form";
-import { showNotification, updateNotification } from "@mantine/notifications";
 import {
   IconCalendar,
-  IconCheck,
   IconClock,
   IconFileDescription,
   IconKey,
 } from "@tabler/icons";
-import dayjs from "dayjs";
 import Head from "next/head";
 
+import { useCreateAppointmentMutation } from "@/hooks/home/use-create-appointment-mutation";
 import { useGetCustomersQuery } from "@/hooks/home/use-get-customers-query";
 import { useGetProjectsQuery } from "@/hooks/home/use-get-projects-query";
 import { useGetUserQuery } from "@/hooks/home/use-get-user-query";
@@ -58,6 +55,7 @@ export default function Home() {
     },
   });
 
+  const createAppointmentMutation = useCreateAppointmentMutation();
   const userQuery = useGetUserQuery({
     username: decodedToken.unique_name?.toLowerCase() || "",
   });
@@ -101,52 +99,7 @@ export default function Home() {
     });
 
     for (const appointment of appointments) {
-      showNotification({
-        id: appointment.day,
-        title: "Creating appointment",
-        message: `Creating appointment for date "${dayjs(
-          appointment.day
-        ).format("DD/MM/YYYY")}"`,
-        loading: true,
-        disallowClose: true,
-        autoClose: false,
-      });
-
-      await AppointmentService.createAppointment(appointment).catch((e) => {
-        console.error(e);
-        const isUnauthorized = e?.response?.status === 401;
-
-        if (isUnauthorized) {
-          updateNotification({
-            id: appointment.day,
-            title: "There's a problem",
-            message: "Invalid token",
-            color: "red",
-            autoClose: false,
-          });
-
-          return;
-        }
-
-        updateNotification({
-          id: appointment.day,
-          title: "There's a problem",
-          message: "Something went wrong",
-          color: "red",
-        });
-      });
-
-      updateNotification({
-        id: appointment.day,
-        title: "Appointment created",
-        color: "teal",
-        message:
-          'Appointment for date "' +
-          dayjs(appointment.day).format("DD/MM/YYYY") +
-          '" created',
-        icon: <IconCheck size={16} />,
-        autoClose: false,
-      });
+      await createAppointmentMutation.mutateAsync(appointment);
     }
   };
 
@@ -284,7 +237,11 @@ export default function Home() {
                 onChange={setTimeRangeValue}
               />
 
-              <Button disabled={!validateForm()} type="submit">
+              <Button
+                disabled={!validateForm()}
+                loading={createAppointmentMutation.isLoading}
+                type="submit"
+              >
                 Create appointments
               </Button>
             </Stack>
