@@ -1,0 +1,12 @@
+{
+  "name": "FCTeam Appointments",
+  "icons": [
+    {
+      "src": "/512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone"
+}
