@@ -1,16 +1,16 @@
 import { IAppointment } from "@/interfaces/services/appointment.interface";
 
 export class AppointmentModel implements IAppointment {
-  customer: string = "";
-  day: string = "";
-  project: string = "";
+  customer = "";
+  day = "";
+  project = "";
   source: "manual" = "manual";
-  start: string = "";
-  stop: string = "";
-  task_description: string = "";
-  toDo: boolean = false;
+  start = "";
+  stop = "";
+  task_description = "";
+  toDo = false;
   track_option: "start_and_end" = "start_and_end";
-  user: string = "";
+  user = "";
 
   constructor(appointment: IAppointment) {
     Object.assign(this, appointment);
